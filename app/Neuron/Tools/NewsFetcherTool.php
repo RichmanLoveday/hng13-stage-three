@@ -29,31 +29,31 @@ class NewsFetcherTool extends Tool
                 name: 'query',
                 type: PropertyType::STRING,
                 description: 'Topic or keyword to search news for (e.g., "global economy", "AI advancements").',
-                required: true,
+                required: true
             ),
             new ToolProperty(
                 name: 'from',
                 type: PropertyType::STRING,
                 description: 'Start date (YYYY-MM-DD).',
-                required: false,
+                required: false
             ),
             new ToolProperty(
                 name: 'to',
                 type: PropertyType::STRING,
                 description: 'End date (YYYY-MM-DD).',
-                required: false,
+                required: false
             ),
             new ToolProperty(
                 name: 'source_language',
                 type: PropertyType::STRING,
                 description: 'Source language of the articles (default: en).',
-                required: false,
+                required: false
             ),
             new ToolProperty(
                 name: 'target_language',
                 type: PropertyType::STRING,
                 description: 'Target language for summarization or translation (default: en).',
-                required: false,
+                required: false
             ),
         ];
     }
@@ -63,7 +63,7 @@ class NewsFetcherTool extends Tool
         ?string $from = null,
         ?string $to = null,
         ?string $source_language = 'en',
-        ?string $target_language = 'en',
+        ?string $target_language = 'en'
     ): string {
         try {
             $query = trim($query);
@@ -79,28 +79,26 @@ class NewsFetcherTool extends Tool
 
             $articles = Arr::get($result, 'articles', []);
 
-            //? Normalize and limit to 10 results
             $normalized = collect($articles)
-                ->take(10)
-                ->map(fn($a) => [
-                    'title' => $a['title'] ?? '',
-                    'description' => $a['description'] ?? '',
-                    'source' => $a['source']['name'] ?? ($a['source'] ?? ''),
-                    'published_at' => $a['publishedAt'] ?? '',
-                    'url' => $a['url'] ?? '',
-                ])
-                ->filter(fn($a) => !empty($a['title']) || !empty($a['description']))
-                ->values()
-                ->toArray();
+                ->map(function ($a) {
+                    $title = $a['title'] ?? '';
+                    $desc = $a['description'] ?? '';
+                    $source = $a['source']['name'] ?? ($a['source'] ?? '');
+                    $date = $a['publishedAt'] ?? '';
+                    $url = $a['url'] ?? '';
 
-            // Return structured JSON output
+                    return "Title: {$title}\nDescription: {$desc}\nSource: {$source}\nPublished At: {$date}\nURL: {$url}\n";
+                })
+                ->filter(fn($text) => trim($text) !== '')
+                ->implode("\n\n");
+
             return json_encode([
                 'query' => $query,
                 'source_lang' => $source_language,
                 'target_lang' => $target_language,
                 'from' => $fromDate,
                 'to' => $toDate,
-                'articles' => $normalized,
+                'articles' => $normalized ?: 'No relevant articles found.',
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
             Log::error('NewsFetcherTool failed', [
@@ -109,30 +107,23 @@ class NewsFetcherTool extends Tool
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Return safe fallback JSON
             return json_encode([
                 'query' => $query ?? '',
                 'source_lang' => $source_language ?? 'en',
                 'target_lang' => $target_language ?? 'en',
                 'from' => now()->subDays(7)->toDateString(),
                 'to' => now()->toDateString(),
-                'articles' => [],
-                'error' => 'Failed to fetch or parse news data. Please try again later.',
+                'articles' => 'No relevant news was found for your request.',
+                'error' => 'Failed to fetch or parse news data.',
             ], JSON_PRETTY_PRINT);
         }
     }
 
-    /**
-     * Validate date or fallback to default.
-     */
     protected function validateOrDefaultDate(?string $date, Carbon $default): string
     {
         try {
-            if (!$date) {
-                return $default->toDateString();
-            }
-            return Carbon::parse($date)->toDateString();
-        } catch (\Exception $e) {
+            return $date ? Carbon::parse($date)->toDateString() : $default->toDateString();
+        } catch (\Exception) {
             return $default->toDateString();
         }
     }
