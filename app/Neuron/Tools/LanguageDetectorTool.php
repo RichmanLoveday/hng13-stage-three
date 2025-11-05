@@ -12,7 +12,7 @@ use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolProperty;
 use Throwable;
 
-final class LanguageDetectorTool extends Tool
+class LanguageDetectorTool extends Tool
 {
     public function __construct()
     {

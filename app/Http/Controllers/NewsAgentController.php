@@ -87,7 +87,6 @@ class NewsAgentController extends Controller
                         ]
                     ],
 
-                    // ✅ ✅ THIS IS WHAT YOU WERE MISSING — ARTIFACTS
                     "artifacts" => [
                         [
                             "artifactId" => $artifactMsg,
