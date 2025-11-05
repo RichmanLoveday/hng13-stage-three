@@ -10,4 +10,4 @@ Route::get('/user', function (Request $request) {
 
 
 
-Route::post('/news-agent', [NewsAgentController::class, 'handle']);
+Route::post('/a2a/news-agent', [NewsAgentController::class, 'handle']);
