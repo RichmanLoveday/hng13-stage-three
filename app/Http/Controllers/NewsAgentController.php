@@ -58,27 +58,73 @@ class NewsAgentController extends Controller
             //? Build A2A response
             $responseText = $agentResponse ?? "No response";
 
+            $taskId       = $message["taskId"] ?? Str::uuid()->toString();
+            $contextId    = Str::uuid()->toString();
+            $messageId    = Str::uuid()->toString();
+            $artifactMsg  = Str::uuid()->toString();
+            $artifactTool = Str::uuid()->toString();
+
+
             return response()->json([
                 "jsonrpc" => "2.0",
                 "id" => $id,
                 "result" => [
-                    "id" => $message["taskId"] ?? Str::uuid()->toString(),
-                    "contextId" => Str::uuid()->toString(),
+                    "id" => $taskId,
+                    "contextId" => $contextId,
                     "status" => [
                         "state" => "completed",
                         "timestamp" => now()->toISOString(),
                         "message" => [
-                            "kind" => "message",
+                            "messageId" => $messageId,
                             "role" => "agent",
                             "parts" => [
                                 [
                                     "kind" => "text",
                                     "text" => $responseText
                                 ]
+                            ],
+                            "kind" => "message"
+                        ]
+                    ],
+
+                    // ✅ ✅ THIS IS WHAT YOU WERE MISSING — ARTIFACTS
+                    "artifacts" => [
+                        [
+                            "artifactId" => $artifactMsg,
+                            "name" => "newsAgentResponse",
+                            "parts" => [
+                                [
+                                    "kind" => "text",
+                                    "text" => $responseText
+                                ]
+                            ]
+                        ],
+                        [
+                            "artifactId" => $artifactTool,
+                            "name" => "ToolResults",
+                            "parts" => [
+                                [
+                                    "kind" => "data",
+                                    "data" => [
+                                        "type" => "tool-result",
+                                        "runId" => Str::uuid()->toString(),
+                                        "from" => "AGENT",
+                                        "payload" => [
+                                            "args" => [
+                                                "text" => $text
+                                            ],
+                                            "toolName" => "NewsAgent",
+                                            "result" => [
+                                                "success" => true,
+                                                "responseLength" => strlen($responseText)
+                                            ]
+                                        ]
+                                    ]
+                                ]
                             ]
                         ]
                     ],
-                    "artifacts" => [],
+
                     "history" => [$message],
                     "kind" => "task"
                 ]
